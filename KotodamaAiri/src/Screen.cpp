@@ -29,21 +29,28 @@ namespace KotodamaAiri
 
 	void Screen::CheckPixels() noexcept
 	{
-		int redObjMin = 214 - 5;
-		int redObjMax = 214 + 5;
-		int greenObjMin = 138 - 5;
-		int greenObjMax = 138 + 5;
-		int blueObjMin = 52 - 5;
-		int blueObjMax = 52 + 5;
-		GetDIBits(_captureDc, _captureBitmap, 0, _height, _pixels, &_bmi, DIB_RGB_COLORS);
+		UpdatePixels();
+		for (const auto &p : GetPixels(214 - 5, 214 + 5, 138 - 5, 138 + 5, 52 - 5, 52 + 5))
+			std::cout << "(" << p._x << ";" << p._y << "): " << "(" << (int)p._color.rgbRed << ";" << (int)p._color.rgbGreen << ";" << (int)p._color.rgbBlue << ")" << std::endl;
+	}
+
+	std::vector<Screen::PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
+	{
+		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
 		{
 			const RGBQUAD& quad = _pixels[i];
 			int red = quad.rgbRed;
 			int green = quad.rgbGreen;
 			int blue = quad.rgbBlue;
-			if (red >= redObjMin && red <= redObjMax && green >= greenObjMin && green <= greenObjMax && blue >= blueObjMin && blue <= blueObjMax)
-				std::cout << "(" << (i % _width) << ";" << (_height - i / _width) << "): " << "(" << red << ";" << green << ";" << blue << ")" << std::endl;
+			if (red >= redMin && red <= redMax && green >= greenMin && green <= greenMax && blue >= blueMin && blue <= blueMax)
+				newPixels.emplace_back(i % _width, _height - i / _width, quad);
 		}
+		return (newPixels);
+	}
+
+	void Screen::UpdatePixels() noexcept
+	{
+		GetDIBits(_captureDc, _captureBitmap, 0, _height, _pixels, &_bmi, DIB_RGB_COLORS);
 	}
 }
