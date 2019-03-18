@@ -2,22 +2,12 @@
 # define SCREEN_HPP_
 
 # include <vector>
-# include <Windows.h>
+# include "PixelInfo.hpp"
 
 namespace KotodamaAiri
 {
 	class Screen
 	{
-	private:
-		struct PixelInfo
-		{
-			PixelInfo(int x, int y, const RGBQUAD &color)
-				: _x(x), _y(y), _color(color)
-			{ }
-			int _x, _y;
-			const RGBQUAD& _color;
-		};
-
 	public:
 		Screen() noexcept;
 		~Screen() noexcept;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "../inc/Screen.hpp"
+#include "../inc/PixelBlock.hpp"
 
 namespace KotodamaAiri
 {
@@ -10,12 +11,11 @@ namespace KotodamaAiri
 		_bmi(), _pixels(new RGBQUAD[_screenSize])
 	{
 		SelectObject(_captureDc, _captureBitmap);
-		BitBlt(_captureDc, 0, 0, _width, _height, _desktopDc, 0, 0, SRCCOPY | CAPTUREBLT);
 		_bmi.bmiHeader.biSize = sizeof(_bmi.bmiHeader);
 		_bmi.bmiHeader.biWidth = _width;
 		_bmi.bmiHeader.biHeight = _height;
-		_bmi.bmiHeader.biPlanes = GetDeviceCaps(_desktopDc, PLANES);
-		_bmi.bmiHeader.biBitCount = GetDeviceCaps(_desktopDc, BITSPIXEL);
+		_bmi.bmiHeader.biPlanes = static_cast<WORD>(GetDeviceCaps(_desktopDc, PLANES));
+		_bmi.bmiHeader.biBitCount = static_cast<WORD>(GetDeviceCaps(_desktopDc, BITSPIXEL));
 		_bmi.bmiHeader.biCompression = BI_RGB;
 	}
 
@@ -32,14 +32,32 @@ namespace KotodamaAiri
 		UpdatePixels();
 		HDC hDC_Desktop = GetDC(0);
 		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
-		for (const auto& p : GetPixels(214 - 5, 214 + 5, 138 - 5, 138 + 5, 52 - 5, 52 + 5))
+		std::vector<PixelBlock> pixels;
+		constexpr int offset = 5;
+		for (const auto& p : GetPixels(214 - offset, 214 + offset, 138 - offset, 138 + offset, 52 - offset, 52 + offset))
 		{
-			RECT rect = { p._x, p._y, p._x + 1, p._y + 1 };
+			bool pxFound = false;
+			Vector2 pos = Vector2(p._x, p._y);
+			for (PixelBlock &px : pixels)
+			{
+				if (px.AddPixel(pos))
+				{
+					pxFound = true;
+					break;
+				}
+			}
+			if (!pxFound)
+				pixels.emplace_back(pos);
+		}
+		for (const auto & p : pixels)
+		{
+			RECT rect = p.GetRect();
 			FillRect(hDC_Desktop, &rect, blueBrush);
 		}
+		std::cout << pixels.size() << std::endl;
 	}
 
-	std::vector<Screen::PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
+	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
 	{
 		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
@@ -56,6 +74,7 @@ namespace KotodamaAiri
 
 	void Screen::UpdatePixels() noexcept
 	{
+		BitBlt(_captureDc, 0, 0, _width, _height, _desktopDc, 0, 0, SRCCOPY | CAPTUREBLT);
 		GetDIBits(_captureDc, _captureBitmap, 0, _height, _pixels, &_bmi, DIB_RGB_COLORS);
 	}
 }

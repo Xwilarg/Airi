@@ -32,12 +32,13 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalOptions>/std:c++17 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -48,9 +49,13 @@
   <ItemGroup>
     <ClCompile Include="src/main.cpp" />
     <ClCompile Include="src/Screen.cpp" />
+    <ClCompile Include="src\PixelBlock.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc/Screen.hpp" />
+    <ClInclude Include="inc\PixelBlock.hpp" />
+    <ClInclude Include="inc\PixelInfo.hpp" />
+    <ClInclude Include="inc\Vector2.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
