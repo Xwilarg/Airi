@@ -3,8 +3,18 @@
 namespace KotodamaAiri
 {
 	PixelBlock::PixelBlock(const Vector2 &pos) noexcept
-		: _lowerRight(pos), _upperLeft(pos)
+		: _lowerRight(pos), _upperLeft(pos), _id(id++)
 	{ }
+
+	bool PixelBlock::operator==(const PixelBlock& pb) const noexcept
+	{
+		return (_id == pb._id);
+	}
+
+	bool PixelBlock::operator!=(const PixelBlock & pb) const noexcept
+	{
+		return (_id != pb._id);
+	}
 
 	bool PixelBlock::AddPixel(const Vector2& pos) noexcept
 	{
@@ -27,6 +37,30 @@ namespace KotodamaAiri
 		return (r);
 	}
 
+	Vector2 PixelBlock::GetSize() const noexcept
+	{
+		return (Vector2(_lowerRight._x - _upperLeft._x, _lowerRight._y - _upperLeft._y));
+	}
+
+	bool PixelBlock::IsSquared(int margin) const noexcept
+	{
+		Vector2 size = GetSize();
+		int sizeInt = size._x - size._y;
+		if (sizeInt < 0)
+			sizeInt = -sizeInt;
+		return (sizeInt < margin);
+	}
+
+	bool PixelBlock::IsCloseX(const PixelBlock& pb) const noexcept
+	{
+		return (_upperLeft._x == pb._upperLeft._x);
+	}
+
+	const Vector2& PixelBlock::GetUpperLeft() const noexcept
+	{
+		return (_upperLeft);
+	}
+
 	bool PixelBlock::IsClose(const Vector2 &pos, int limit) const noexcept
 	{
 		return (Distance(pos, _upperLeft) < limit || Distance(pos, _lowerRight) < limit);
@@ -41,4 +75,6 @@ namespace KotodamaAiri
 	{
 		return (x * x);
 	}
+
+	int PixelBlock::id = 0;
 }

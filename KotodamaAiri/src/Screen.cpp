@@ -1,4 +1,5 @@
 #include <iostream>
+#include <climits>
 #include "../inc/Screen.hpp"
 #include "../inc/PixelBlock.hpp"
 
@@ -49,12 +50,52 @@ namespace KotodamaAiri
 			if (!pxFound)
 				pixels.emplace_back(pos);
 		}
-		for (const auto & p : pixels)
+		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
 		{
-			RECT rect = p.GetRect();
+			Vector2 size = pixels[i].GetSize();
+			if (!pixels[i].IsSquared(5) || size._x < 5 || size._y < 5)
+				pixels.erase(pixels.begin() + i);
+		}
+		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
+		{
+			bool haveSameX = false;
+			const auto& px = pixels[i];
+			for (const auto& p : pixels)
+			{
+				if (px == p)
+					continue;
+				if (p.IsCloseX(px))
+				{
+					haveSameX = true;
+					break;
+				}
+			}
+			if (!haveSameX)
+				pixels.erase(pixels.begin() + i);
+		}
+		if (pixels.size() != 4)
+			std::cout << "Can't locate map" << std::endl;
+		else
+		{
+			int leftPos = INT_MAX;
+			int rightPos = 0;
+			int upPos = INT_MAX;
+			int downPos = 0;
+			for (const auto& p : pixels)
+			{
+				const Vector2& pos = p.GetUpperLeft();
+				if (pos._x < leftPos)
+					leftPos = pos._x;
+				else if (pos._x > rightPos)
+					rightPos = pos._x;
+				if (pos._y < upPos)
+					upPos = pos._y;
+				else if (pos._y > downPos)
+					downPos = pos._y;
+			}
+			RECT rect = { leftPos, upPos, rightPos, downPos };
 			FillRect(hDC_Desktop, &rect, blueBrush);
 		}
-		std::cout << pixels.size() << std::endl;
 	}
 
 	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
