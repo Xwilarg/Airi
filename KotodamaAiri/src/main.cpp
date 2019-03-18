@@ -7,7 +7,8 @@ int main()
 	while (true)
 	{
 		screen.CheckPixels();
-		Sleep(1000);
+		std::cout << std::endl << "Done, resetting in 10 sec..." << std::endl << std::endl;
+		Sleep(10000);
 	}
 
 	std::cout << "Enter something to continue..." << std::endl;

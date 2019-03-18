@@ -30,30 +30,48 @@ namespace KotodamaAiri
 
 	void Screen::CheckPixels() noexcept
 	{
-		UpdatePixels();
+		std::cout << "Trying to find map...";
 		HDC hDC_Desktop = GetDC(0);
 		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
-		std::vector<PixelBlock> pixels;
-		constexpr int offset = 5;
-		for (const auto& p : GetPixels(214 - offset, 214 + offset, 138 - offset, 138 + offset, 52 - offset, 52 + offset))
+		RECT r;
+		do
 		{
-			bool pxFound = false;
-			Vector2 pos = Vector2(p._x, p._y);
-			for (PixelBlock &px : pixels)
-			{
-				if (px.AddPixel(pos))
-				{
-					pxFound = true;
-					break;
-				}
-			}
-			if (!pxFound)
-				pixels.emplace_back(pos);
+			r = FindMap();
+		} while (r.left == 0);
+		Vector2 minV(r.left, r.top);
+		Vector2 maxV(r.right, r.bottom);
+		std::cout << " OK" << std::endl;
+		while (true)
+		{
+			RECT rect = FindPlayer(minV, maxV);
+			if (rect.left != 0)
+				FillRect(hDC_Desktop, &rect, blueBrush);
 		}
+	}
+
+	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max) noexcept
+	{
+		std::vector<PixelBlock> players = FindObject(255, 250, 250, 50, min, max);
+		RECT rect;
+		if (players.size() == 1)
+		{
+			PixelBlock player = players[0];
+			const Vector2& pos = player.GetUpperLeft();
+			const Vector2& size = player.GetSize();
+			rect = { pos._x, pos._y, pos._x + size._x, pos._y + size._y };
+		}
+		else
+			rect = { 0, 0, 0, 0 };
+		return (rect);
+	}
+
+	RECT Screen::FindMap() noexcept
+	{
+		std::vector<PixelBlock> pixels = FindObject(214, 138, 52, 5, Vector2(0, 0), Vector2(_width, _height));
 		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
 		{
 			Vector2 size = pixels[i].GetSize();
-			if (!pixels[i].IsSquared(5) || size._x < 5 || size._y < 5)
+			if (!pixels[i].IsSquared(5) || size._x < 2 || size._y < 2)
 				pixels.erase(pixels.begin() + i);
 		}
 		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
@@ -74,31 +92,53 @@ namespace KotodamaAiri
 				pixels.erase(pixels.begin() + i);
 		}
 		if (pixels.size() != 4)
-			std::cout << "Can't locate map" << std::endl;
-		else
 		{
-			int leftPos = INT_MAX;
-			int rightPos = 0;
-			int upPos = INT_MAX;
-			int downPos = 0;
-			for (const auto& p : pixels)
-			{
-				const Vector2& pos = p.GetUpperLeft();
-				if (pos._x < leftPos)
-					leftPos = pos._x;
-				else if (pos._x > rightPos)
-					rightPos = pos._x;
-				if (pos._y < upPos)
-					upPos = pos._y;
-				else if (pos._y > downPos)
-					downPos = pos._y;
-			}
-			RECT rect = { leftPos, upPos, rightPos, downPos };
-			FillRect(hDC_Desktop, &rect, blueBrush);
+			RECT rect = { 0, 0, 0, 0 };
+			return (rect);
 		}
+		int leftPos = INT_MAX;
+		int rightPos = 0;
+		int upPos = INT_MAX;
+		int downPos = 0;
+		for (const auto& p : pixels)
+		{
+			const Vector2& pos = p.GetUpperLeft();
+			if (pos._x < leftPos)
+				leftPos = pos._x;
+			else if (pos._x > rightPos)
+				rightPos = pos._x;
+			if (pos._y < upPos)
+				upPos = pos._y;
+			else if (pos._y > downPos)
+				downPos = pos._y;
+		}
+		RECT rect = { leftPos, upPos, rightPos, downPos };
+		return (rect);
 	}
 
-	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
+	std::vector<PixelBlock> Screen::FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept
+	{
+		UpdatePixels();
+		std::vector<PixelBlock> pixels;
+		for (const auto& p : GetPixels(red - offset, red + offset, green - offset, green + offset, blue - offset, blue + offset, min, max))
+		{
+			bool pxFound = false;
+			Vector2 pos = Vector2(p._x, p._y);
+			for (PixelBlock& px : pixels)
+			{
+				if (px.AddPixel(pos))
+				{
+					pxFound = true;
+					break;
+				}
+			}
+			if (!pxFound)
+				pixels.emplace_back(pos);
+		}
+		return (pixels);
+	}
+
+	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2& min, const Vector2& max) const noexcept
 	{
 		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
@@ -108,7 +148,12 @@ namespace KotodamaAiri
 			int green = quad.rgbGreen;
 			int blue = quad.rgbBlue;
 			if (red >= redMin && red <= redMax && green >= greenMin && green <= greenMax && blue >= blueMin && blue <= blueMax)
-				newPixels.emplace_back(i % _width, _height - i / _width, quad);
+			{
+				int x = i % _width;
+				int y = _height - i / _width;
+				if (x >= min._x && x <= max._x && y >= min._y && y <= max._y)
+					newPixels.emplace_back(x, y, quad);
+			}
 		}
 		return (newPixels);
 	}

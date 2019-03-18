@@ -3,6 +3,7 @@
 
 # include <vector>
 # include "PixelInfo.hpp"
+# include "PixelBlock.hpp"
 
 namespace KotodamaAiri
 {
@@ -14,7 +15,10 @@ namespace KotodamaAiri
 		void CheckPixels() noexcept;
 
 	private:
-		std::vector<PixelInfo> GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept;
+		[[nodiscard]] RECT FindPlayer(const Vector2 &min, const Vector2 &max) noexcept;
+		[[nodiscard]] RECT FindMap() noexcept;
+		[[nodiscard]] std::vector<PixelBlock> FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept;
+		std::vector<PixelInfo> GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2 &min, const Vector2 &max) const noexcept;
 		void UpdatePixels() noexcept;
 		HWND _desktopWindow;
 		HDC _desktopDc, _captureDc;
