@@ -4,9 +4,12 @@
 int main()
 {
 	KotodamaAiri::Screen screen;
-	screen.CheckPixels();
+	while (true)
+	{
+		screen.CheckPixels();
+		Sleep(1000);
+	}
 
-	// Free
 	std::cout << "Enter something to continue..." << std::endl;
 	getchar();
 	return (0);

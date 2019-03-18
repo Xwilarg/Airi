@@ -30,8 +30,13 @@ namespace KotodamaAiri
 	void Screen::CheckPixels() noexcept
 	{
 		UpdatePixels();
-		for (const auto &p : GetPixels(214 - 5, 214 + 5, 138 - 5, 138 + 5, 52 - 5, 52 + 5))
-			std::cout << "(" << p._x << ";" << p._y << "): " << "(" << (int)p._color.rgbRed << ";" << (int)p._color.rgbGreen << ";" << (int)p._color.rgbBlue << ")" << std::endl;
+		HDC hDC_Desktop = GetDC(0);
+		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
+		for (const auto& p : GetPixels(214 - 5, 214 + 5, 138 - 5, 138 + 5, 52 - 5, 52 + 5))
+		{
+			RECT rect = { p._x, p._y, p._x + 1, p._y + 1 };
+			FillRect(hDC_Desktop, &rect, blueBrush);
+		}
 	}
 
 	std::vector<Screen::PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax) const noexcept
