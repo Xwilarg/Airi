@@ -51,7 +51,7 @@ namespace KotodamaAiri
 
 	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max) noexcept
 	{
-		std::vector<PixelBlock> players = FindObject(255, 250, 250, 50, min, max);
+		std::vector<PixelBlock> players = FindObject(255, 250, 250, 30, min, max);
 		RECT rect;
 		if (players.size() == 1)
 		{
