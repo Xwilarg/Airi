@@ -58,9 +58,28 @@ namespace KotodamaAiri
 		{
 			RECT rect = FindPlayer(minV, maxV);
 			if (rect.left != 0)
-				FillRect(hDC_Desktop, &rect, blueBrush);
+				std::cout << "\rPlayer position: (" << ((rect.right + rect.left) / 2) << " ; " << ((rect.top + rect.bottom) / 2) << ")";
+			else
+				std::cout << "\rUnknown";
+			std::vector<RECT> allAllies = FindAllies(minV, maxV);
+			std::cout << ", Allies found: " << allAllies.size();
+			for (const auto &pos : allAllies)
+				std::cout << " (" << ((pos.right + pos.left) / 2) << " ; " << ((pos.top + pos.bottom) / 2) << ")";
 		}
 		DeleteObject(blueBrush);
+	}
+
+	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
+	{
+		std::vector<PixelBlock> players = FindObject(202, 113, 207, 30, min, max);
+		std::vector<RECT> allRects;
+		for (const auto& player : players)
+		{
+			const Vector2& pos = player.GetUpperLeft();
+			const Vector2& size = player.GetSize();
+			allRects.push_back({ pos._x, pos._y, pos._x + size._x, pos._y + size._y });
+		}
+		return (allRects);
 	}
 
 	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max) noexcept
