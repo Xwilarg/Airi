@@ -142,6 +142,13 @@ namespace KotodamaAiri
 					currCamSpeed = baseCamSpeed;
 				}
 				input.ki.wVk = 0x57; // W
+				if (input.ki.dwFlags == 0 && GetKeyState('W') >= 0)
+				{
+					SendInput(1, &input, sizeof(INPUT));
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					SendInput(1, &input, sizeof(INPUT));
+					input.ki.dwFlags = 0;
+				}
 				SendInput(1, &input, sizeof(INPUT));
 				input.ki.wVk = 0x33; // 3
 				input.ki.dwFlags = 0;
