@@ -65,6 +65,12 @@ namespace KotodamaAiri
 		std::cout << " OK" << std::endl;
 		std::string finalMsg = "";
 		Vector2 playerDistRef = Vector2(rect.left, rect.top);
+		INPUT input;
+		input.type = INPUT_KEYBOARD;
+		input.ki.wScan = 0;
+		input.ki.time = 0;
+		input.ki.dwExtraInfo = 0;
+		input.ki.wVk = 0x57; // W
 		while (true)
 		{
 			std::cout << std::string(finalMsg.length(), '\b');
@@ -96,9 +102,18 @@ namespace KotodamaAiri
 				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				GetCursorPos(&p);
 				if (closest.left < playerDistRef._x)
-					SetCursorPos(p.x - 1, p.y);
+				{
+					SetCursorPos(p.x - 10, p.y);
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+				}
 				else if (closest.left > playerDistRef._x || closest.top > playerDistRef._y)
-					SetCursorPos(p.x + 1, p.y);
+				{
+					SetCursorPos(p.x + 10, p.y);
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
+				}
+				else
+					input.ki.dwFlags = 0;
+				SendInput(1, &input, sizeof(INPUT));
 			}
 			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
@@ -110,6 +125,10 @@ namespace KotodamaAiri
 	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
 	{
 		std::vector<PixelBlock> players = FindObject(200, 110, 210, 15, min, max);
+		std::vector<PixelBlock> tmp = FindObject(65, 180, 190, 15, min, max);
+		std::vector<PixelBlock> tmp2 = FindObject(74, 215, 218, 15, min, max);
+		players.insert(players.end(), tmp.begin(), tmp.end());
+		players.insert(players.end(), tmp2.begin(), tmp2.end());
 		std::vector<RECT> allRects;
 		for (const auto& player : players)
 		{
