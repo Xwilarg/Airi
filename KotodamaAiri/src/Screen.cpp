@@ -30,23 +30,37 @@ namespace KotodamaAiri
 
 	void Screen::CheckPixels() noexcept
 	{
-		std::cout << "Trying to find map...";
+		std::cout << "To begin, left click on the center of the minimap to locate it." << std::endl;
 		HDC hDC_Desktop = GetDC(0);
 		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
-		RECT r;
-		do
+	retry:
+		while (true)
 		{
-			r = FindMap();
-		} while (r.left == 0);
+			if (GetKeyState(VK_LBUTTON) < 0)
+				break;
+		}
+		POINT p;
+		GetCursorPos(&p);
+		RECT r { p.x - 125.f, p.y - 125.f, p.x + 125.f, p.y + 125.f };
+		std::cout << "Press Y to confirm or N to retry." << std::endl;
+		while (true)
+		{
+			if (GetKeyState('Y') & 0x8000)
+				break;
+			else if (GetKeyState('N') & 0x8000)
+				goto retry;
+			FillRect(hDC_Desktop, &r, blueBrush);
+		}
 		Vector2 minV(r.left, r.top);
 		Vector2 maxV(r.right, r.bottom);
-		std::cout << " OK" << std::endl;
+		std::cout << "Map located." << std::endl;
 		while (true)
 		{
 			RECT rect = FindPlayer(minV, maxV);
 			if (rect.left != 0)
 				FillRect(hDC_Desktop, &rect, blueBrush);
 		}
+		DeleteObject(blueBrush);
 	}
 
 	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max) noexcept
@@ -62,57 +76,6 @@ namespace KotodamaAiri
 		}
 		else
 			rect = { 0, 0, 0, 0 };
-		return (rect);
-	}
-
-	RECT Screen::FindMap() noexcept
-	{
-		std::vector<PixelBlock> pixels = FindObject(214, 138, 52, 5, Vector2(0, 0), Vector2(_width, _height));
-		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
-		{
-			Vector2 size = pixels[i].GetSize();
-			if (!pixels[i].IsSquared(5) || size._x < 2 || size._y < 2)
-				pixels.erase(pixels.begin() + i);
-		}
-		for (int i = static_cast<int>(pixels.size()) - 1; i >= 0; i--)
-		{
-			bool haveSameX = false;
-			const auto& px = pixels[i];
-			for (const auto& p : pixels)
-			{
-				if (px == p)
-					continue;
-				if (p.IsCloseX(px))
-				{
-					haveSameX = true;
-					break;
-				}
-			}
-			if (!haveSameX)
-				pixels.erase(pixels.begin() + i);
-		}
-		if (pixels.size() != 4)
-		{
-			RECT rect = { 0, 0, 0, 0 };
-			return (rect);
-		}
-		int leftPos = INT_MAX;
-		int rightPos = 0;
-		int upPos = INT_MAX;
-		int downPos = 0;
-		for (const auto& p : pixels)
-		{
-			const Vector2& pos = p.GetUpperLeft();
-			if (pos._x < leftPos)
-				leftPos = pos._x;
-			else if (pos._x > rightPos)
-				rightPos = pos._x;
-			if (pos._y < upPos)
-				upPos = pos._y;
-			else if (pos._y > downPos)
-				downPos = pos._y;
-		}
-		RECT rect = { leftPos, upPos, rightPos, downPos };
 		return (rect);
 	}
 
