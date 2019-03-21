@@ -56,11 +56,13 @@ namespace KotodamaAiri
 		Vector2 minV(r.left, r.top);
 		Vector2 maxV(r.right, r.bottom);
 		std::cout << "Map located, you can press Q at any time to exit." << std::endl;
+		std::cout << "Locating player...";
 		RECT rect;
 		do
 		{
 			rect = FindPlayer(minV, maxV, p);
 		} while (rect.left == 0);
+		std::cout << " OK" << std::endl;
 		std::string finalMsg = "";
 		Vector2 playerDistRef = Vector2(rect.left, rect.top);
 		while (true)
@@ -90,7 +92,14 @@ namespace KotodamaAiri
 				}
 			}
 			if (minDist > -1)
+			{
 				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
+				GetCursorPos(&p);
+				if (closest.left < playerDistRef._x)
+					SetCursorPos(p.x - 1, p.y);
+				else if (closest.left > playerDistRef._x || closest.top > playerDistRef._y)
+					SetCursorPos(p.x + 1, p.y);
+			}
 			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
 				break;
@@ -113,7 +122,7 @@ namespace KotodamaAiri
 
 	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max, const POINT& center) noexcept
 	{
-		std::vector<PixelBlock> players = FindObject(230, 250, 250, 15, min, max);
+		std::vector<PixelBlock> players = FindObject(230, 250, 250, 30, min, max);
 		RECT closest;
 		if (players.size() == 0)
 		{
