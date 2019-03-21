@@ -1,7 +1,9 @@
 #include <iostream>
 #include <climits>
+#include <string>
 #include "../inc/Screen.hpp"
 #include "../inc/PixelBlock.hpp"
+#include "../inc/Utils.hpp"
 
 namespace KotodamaAiri
 {
@@ -30,10 +32,10 @@ namespace KotodamaAiri
 
 	void Screen::CheckPixels() noexcept
 	{
-		std::cout << "To begin, left click on the center of the minimap to locate it." << std::endl;
 		HDC hDC_Desktop = GetDC(0);
 		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
 	retry:
+		std::cout << "To begin, left click on the center of the minimap to locate it." << std::endl;
 		while (true)
 		{
 			if (GetKeyState(VK_LBUTTON) < 0)
@@ -41,7 +43,7 @@ namespace KotodamaAiri
 		}
 		POINT p;
 		GetCursorPos(&p);
-		RECT r { p.x - 125.f, p.y - 125.f, p.x + 125.f, p.y + 125.f };
+		RECT r { p.x - 125, p.y - 125, p.x + 125, p.y + 125 };
 		std::cout << "Press Y to confirm or N to retry." << std::endl;
 		while (true)
 		{
@@ -53,25 +55,52 @@ namespace KotodamaAiri
 		}
 		Vector2 minV(r.left, r.top);
 		Vector2 maxV(r.right, r.bottom);
-		std::cout << "Map located." << std::endl;
+		std::cout << "Map located, you can press Q at any time to exit." << std::endl;
+		RECT rect;
+		do
+		{
+			rect = FindPlayer(minV, maxV, p);
+		} while (rect.left == 0);
+		std::string finalMsg = "";
+		Vector2 playerDistRef = Vector2(rect.left, rect.top);
 		while (true)
 		{
-			RECT rect = FindPlayer(minV, maxV);
-			if (rect.left != 0)
-				std::cout << "\rPlayer position: (" << ((rect.right + rect.left) / 2) << " ; " << ((rect.top + rect.bottom) / 2) << ")";
-			else
-				std::cout << "\rUnknown";
+			std::cout << std::string(finalMsg.length(), '\b');
+			finalMsg = "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")";
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
-			std::cout << ", Allies found: " << allAllies.size();
-			for (const auto &pos : allAllies)
-				std::cout << " (" << ((pos.right + pos.left) / 2) << " ; " << ((pos.top + pos.bottom) / 2) << ")";
+			size_t size = allAllies.size();
+			finalMsg += ", Allies found: " + std::to_string(size);
+			RECT closest;
+			int minDist = -1;
+			if (size == 1)
+			{
+				closest = allAllies[0];
+				minDist = 0;
+			}
+			else if (size > 1)
+			{
+				for (const auto& pos : allAllies)
+				{
+					int dist = Utils::Distance(playerDistRef, Vector2(pos.left, pos.top));
+					if (minDist == -1 || dist < minDist)
+					{
+						closest = pos;
+						minDist = dist;
+					}
+				}
+			}
+			if (minDist > -1)
+				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
+			std::cout << finalMsg;
+			if (GetKeyState('Q') & 0x8000)
+				break;
 		}
 		DeleteObject(blueBrush);
 	}
 
 	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
 	{
-		std::vector<PixelBlock> players = FindObject(202, 113, 207, 30, min, max);
+		std::vector<PixelBlock> players = FindObject(200, 110, 210, 15, min, max);
 		std::vector<RECT> allRects;
 		for (const auto& player : players)
 		{
@@ -82,20 +111,29 @@ namespace KotodamaAiri
 		return (allRects);
 	}
 
-	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max) noexcept
+	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max, const POINT& center) noexcept
 	{
-		std::vector<PixelBlock> players = FindObject(255, 250, 250, 30, min, max);
-		RECT rect;
-		if (players.size() == 1)
+		std::vector<PixelBlock> players = FindObject(230, 250, 250, 15, min, max);
+		RECT closest;
+		if (players.size() == 0)
 		{
-			PixelBlock player = players[0];
-			const Vector2& pos = player.GetUpperLeft();
-			const Vector2& size = player.GetSize();
-			rect = { pos._x, pos._y, pos._x + size._x, pos._y + size._y };
+			closest = { 0, 0, 0, 0 };
+			return (closest);
 		}
-		else
-			rect = { 0, 0, 0, 0 };
-		return (rect);
+		int minDist = -1;
+		Vector2 centerVec = Vector2(center.x, center.y);
+		for (const auto& player : players)
+		{
+			const Vector2& pos = player.GetUpperLeft();
+			int dist = Utils::Distance(pos, centerVec);
+			if (minDist == -1 || dist < minDist)
+			{
+				const Vector2& size = player.GetSize();
+				closest = { pos._x, pos._y, pos._x + size._x, pos._y + size._y };
+				minDist = dist;
+			}
+		}
+		return (closest);
 	}
 
 	std::vector<PixelBlock> Screen::FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept

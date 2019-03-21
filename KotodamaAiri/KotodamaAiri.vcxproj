@@ -50,11 +50,13 @@
     <ClCompile Include="src/main.cpp" />
     <ClCompile Include="src/Screen.cpp" />
     <ClCompile Include="src\PixelBlock.cpp" />
+    <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc/Screen.hpp" />
     <ClInclude Include="inc\PixelBlock.hpp" />
     <ClInclude Include="inc\PixelInfo.hpp" />
+    <ClInclude Include="inc\Utils.hpp" />
     <ClInclude Include="inc\Vector2.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -21,8 +21,6 @@ namespace KotodamaAiri
 
 	private:
 		[[nodiscard]] bool IsClose(const Vector2& pos, int limit) const noexcept;
-		[[nodiscard]] int Distance(const Vector2& a, const Vector2& b) const noexcept;
-		[[nodiscard]] int PowTwo(int x) const noexcept;
 		Vector2 _lowerRight, _upperLeft;
 		int _id;
 		static int id;

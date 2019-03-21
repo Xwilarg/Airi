@@ -1,4 +1,5 @@
 #include "../inc/PixelBlock.hpp"
+#include "../inc/Utils.hpp"
 
 namespace KotodamaAiri
 {
@@ -63,17 +64,7 @@ namespace KotodamaAiri
 
 	bool PixelBlock::IsClose(const Vector2 &pos, int limit) const noexcept
 	{
-		return (Distance(pos, _upperLeft) < limit || Distance(pos, _lowerRight) < limit);
-	}
-
-	int PixelBlock::Distance(const Vector2& a, const Vector2& b) const noexcept
-	{
-		return (PowTwo(a._x - b._x) + PowTwo(a._y - b._y));
-	}
-
-	int PixelBlock::PowTwo(int x) const noexcept
-	{
-		return (x * x);
+		return (Utils::Distance(pos, _upperLeft) < limit || Utils::Distance(pos, _lowerRight) < limit);
 	}
 
 	int PixelBlock::id = 0;
