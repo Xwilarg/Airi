@@ -70,7 +70,6 @@ namespace KotodamaAiri
 		input.ki.wScan = 0;
 		input.ki.time = 0;
 		input.ki.dwExtraInfo = 0;
-		input.ki.wVk = 0x57; // W
 		while (true)
 		{
 			std::cout << std::string(finalMsg.length(), '\b');
@@ -97,22 +96,28 @@ namespace KotodamaAiri
 					}
 				}
 			}
+			finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 			if (minDist > -1)
 			{
-				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				GetCursorPos(&p);
+				input.ki.wVk = 0x57; // W
 				if (closest.left < playerDistRef._x)
 				{
-					SetCursorPos(p.x - 10, p.y);
+					SetCursorPos(p.x - 5, p.y);
 					input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
 				else if (closest.left > playerDistRef._x || closest.top > playerDistRef._y)
 				{
-					SetCursorPos(p.x + 10, p.y);
+					SetCursorPos(p.x + 5, p.y);
 					input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
 				else
 					input.ki.dwFlags = 0;
+				SendInput(1, &input, sizeof(INPUT));
+				input.ki.wVk = 0x33; // 3
+				input.ki.dwFlags = 0;
+				SendInput(1, &input, sizeof(INPUT));
+				input.ki.dwFlags = KEYEVENTF_KEYUP;
 				SendInput(1, &input, sizeof(INPUT));
 			}
 			std::cout << finalMsg;
