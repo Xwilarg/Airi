@@ -15,6 +15,12 @@ namespace KotodamaAiri
 		void CheckPixels() noexcept;
 
 	private:
+		enum Direction
+		{
+			LEFT,
+			RIGHT,
+			UNDEFINED
+		};
 		[[nodiscard]] RECT FindPlayer(const Vector2 &min, const Vector2 &max, const POINT& center) noexcept;
 		[[nodiscard]] std::vector<RECT> FindAllies(const Vector2& min, const Vector2& max) noexcept;
 		[[nodiscard]] std::vector<PixelBlock> FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept;

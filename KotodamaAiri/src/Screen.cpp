@@ -70,6 +70,9 @@ namespace KotodamaAiri
 		input.ki.wScan = 0;
 		input.ki.time = 0;
 		input.ki.dwExtraInfo = 0;
+		const int baseCamSpeed = 100;
+		int currCamSpeed = baseCamSpeed;
+		Direction goLeft = UNDEFINED;
 		while (true)
 		{
 			std::cout << std::string(finalMsg.length(), '\b');
@@ -100,25 +103,56 @@ namespace KotodamaAiri
 			if (minDist > -1)
 			{
 				GetCursorPos(&p);
-				input.ki.wVk = 0x57; // W
-				if (closest.left < playerDistRef._x)
+				if (closest.top > playerDistRef._y)
+					SetCursorPos(p.x - 500, p.y);
+				else if (closest.left < playerDistRef._x)
 				{
-					SetCursorPos(p.x - 5, p.y);
-					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					if (goLeft == RIGHT)
+					{
+						currCamSpeed /= 2;
+						if (currCamSpeed == 0)
+							currCamSpeed = 1;
+					}
+					goLeft = LEFT;
+					SetCursorPos(p.x - currCamSpeed, p.y);
+					if (currCamSpeed <= 25)
+						input.ki.dwFlags = 0;
+					else
+						input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
-				else if (closest.left > playerDistRef._x || closest.top > playerDistRef._y)
+				else if (closest.left > playerDistRef._x)
 				{
-					SetCursorPos(p.x + 5, p.y);
-					input.ki.dwFlags = KEYEVENTF_KEYUP;
+					if (goLeft == LEFT)
+					{
+						currCamSpeed /= 2;
+						if (currCamSpeed == 0)
+							currCamSpeed = 1;
+					}
+					goLeft = RIGHT;
+					SetCursorPos(p.x + currCamSpeed, p.y);
+					if (currCamSpeed <= 25)
+						input.ki.dwFlags = 0;
+					else
+						input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
 				else
+				{
 					input.ki.dwFlags = 0;
+					goLeft = UNDEFINED;
+					currCamSpeed = baseCamSpeed;
+				}
+				input.ki.wVk = 0x57; // W
 				SendInput(1, &input, sizeof(INPUT));
 				input.ki.wVk = 0x33; // 3
 				input.ki.dwFlags = 0;
 				SendInput(1, &input, sizeof(INPUT));
 				input.ki.dwFlags = KEYEVENTF_KEYUP;
 				SendInput(1, &input, sizeof(INPUT));
+			}
+			else
+			{
+				goLeft = UNDEFINED;
+				currCamSpeed = baseCamSpeed;
 			}
 			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
