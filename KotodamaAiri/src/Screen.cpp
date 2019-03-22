@@ -84,29 +84,11 @@ namespace KotodamaAiri
 			std::cout << std::string(finalMsg.length(), '\b');
 			finalMsg = "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")";
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
-			size_t size = allAllies.size();
-			finalMsg += ", Allies found: " + std::to_string(size);
+			finalMsg += ", Allies found: " + std::to_string(allAllies.size());
 
 			// Get the closest allie
-			RECT closest;
 			int minDist = -1;
-			if (size == 1)
-			{
-				closest = allAllies[0];
-				minDist = 0;
-			}
-			else if (size > 1)
-			{
-				for (const auto& pos : allAllies)
-				{
-					int dist = Utils::Distance(playerDistRef, Vector2(pos.left, pos.top));
-					if (minDist == -1 || dist < minDist)
-					{
-						closest = pos;
-						minDist = dist;
-					}
-				}
-			}
+			RECT closest = GetClosest(allAllies, minDist, playerDistRef);
 
 			finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 			if (minDist > -1)
@@ -175,11 +157,51 @@ namespace KotodamaAiri
 				goLeft = UNDEFINED;
 				currCamSpeed = baseCamSpeed;
 			}
+
+			std::vector<RECT> allEnnemies = FindEnnemies(minV, maxV);
+			finalMsg += ", Ennemies found: " + std::to_string(allEnnemies.size());
+			closest = GetClosest(allEnnemies, minDist, playerDistRef);
+			if (minDist != -1)
+			{
+				finalMsg += " (Distance: " + std::to_string(minDist) + ")";
+				if (minDist < 12500) // If enemies are too close we launch offensive competencies
+				{
+					input.ki.dwFlags = 0;
+					input.ki.wVk = 0x31; // 1
+					SendInput(1, &input, sizeof(INPUT));
+					input.ki.dwFlags = 0;
+					input.ki.wVk = 0x32; // 2
+					SendInput(1, &input, sizeof(INPUT));
+				}
+			}
 			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
 				break;
 		}
 		DeleteObject(blueBrush);
+	}
+
+	RECT Screen::GetClosest(std::vector<RECT> _allRects, int& minDist, const Vector2& playerDistRef) const noexcept
+	{
+		RECT closest;
+		if (_allRects.size() == 1)
+		{
+			closest = _allRects[0];
+			minDist = 0;
+		}
+		else if (_allRects.size() > 1)
+		{
+			for (const auto& pos : _allRects)
+			{
+				int dist = Utils::Distance(playerDistRef, Vector2(pos.left, pos.top));
+				if (minDist == -1 || dist < minDist)
+				{
+					closest = pos;
+					minDist = dist;
+				}
+			}
+		}
+		return (closest);
 	}
 
 	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
@@ -194,6 +216,21 @@ namespace KotodamaAiri
 		{
 			const Vector2& pos = player.GetUpperLeft();
 			const Vector2& size = player.GetSize();
+			allRects.push_back({ pos._x, pos._y, pos._x + size._x, pos._y + size._y });
+		}
+		return (allRects);
+	}
+
+	std::vector<RECT> Screen::FindEnnemies(const Vector2& min, const Vector2& max) noexcept
+	{
+		std::vector<PixelBlock> ennemies = FindObject(185, 110, 100, 15, min, max); // Red
+		std::vector<PixelBlock> tmp = FindObject(240, 50, 50, 15, min, max); // Red (lighter)
+		ennemies.insert(ennemies.end(), tmp.begin(), tmp.end());
+		std::vector<RECT> allRects;
+		for (const auto& ennemy : ennemies)
+		{
+			const Vector2& pos = ennemy.GetUpperLeft();
+			const Vector2& size = ennemy.GetSize();
 			allRects.push_back({ pos._x, pos._y, pos._x + size._x, pos._y + size._y });
 		}
 		return (allRects);
