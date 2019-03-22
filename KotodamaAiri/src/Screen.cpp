@@ -32,18 +32,20 @@ namespace KotodamaAiri
 
 	void Screen::CheckPixels() noexcept
 	{
+		// Load brush to draw information on screen
 		HDC hDC_Desktop = GetDC(0);
 		HBRUSH blueBrush = CreateSolidBrush(RGB(0, 0, 255));
+
 	retry:
 		std::cout << "To begin, left click on the center of the minimap to locate it." << std::endl;
-		while (true)
+		while (true) // Wait for player to do a left click somewhere
 		{
 			if (GetKeyState(VK_LBUTTON) < 0)
 				break;
 		}
 		POINT p;
 		GetCursorPos(&p);
-		RECT r { p.x - 125, p.y - 125, p.x + 125, p.y + 125 };
+		RECT r { p.x - 125, p.y - 125, p.x + 125, p.y + 125 }; // The mini map is around 500*500px
 		std::cout << "Press Y to confirm or N to retry." << std::endl;
 		while (true)
 		{
@@ -53,6 +55,9 @@ namespace KotodamaAiri
 				goto retry;
 			FillRect(hDC_Desktop, &r, blueBrush);
 		}
+
+		// minV and maxV are the bounds of the mini map
+		// that allow us to limitate our search to a smaller part of the screen
 		Vector2 minV(r.left, r.top);
 		Vector2 maxV(r.right, r.bottom);
 		std::cout << "Map located, you can press Q at any time to exit." << std::endl;
@@ -60,6 +65,7 @@ namespace KotodamaAiri
 		RECT rect;
 		do
 		{
+			// The player is at the center of the mini map, we just locate it once to be sure of it exact position
 			rect = FindPlayer(minV, maxV, p);
 		} while (rect.left == 0);
 		std::cout << " OK" << std::endl;
@@ -80,6 +86,8 @@ namespace KotodamaAiri
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
 			size_t size = allAllies.size();
 			finalMsg += ", Allies found: " + std::to_string(size);
+
+			// Get the closest allie
 			RECT closest;
 			int minDist = -1;
 			if (size == 1)
@@ -99,14 +107,16 @@ namespace KotodamaAiri
 					}
 				}
 			}
+
 			finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 			if (minDist > -1)
 			{
 				GetCursorPos(&p);
-				if (closest.top > playerDistRef._y)
+				if (closest.top > playerDistRef._y) // If allie is behind us we flip the camera
 					SetCursorPos(p.x - 500, p.y);
 				else if (closest.left < playerDistRef._x)
 				{
+					// If the camera is going too fast to locate an allie, we divide it speed by two
 					if (goLeft == RIGHT)
 					{
 						currCamSpeed /= 2;
@@ -115,12 +125,13 @@ namespace KotodamaAiri
 					}
 					goLeft = LEFT;
 					SetCursorPos(p.x - currCamSpeed, p.y);
+					// If the bot is "more or less" looking to an allie, we go forward
 					if (currCamSpeed <= 25)
 						input.ki.dwFlags = 0;
 					else
 						input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
-				else if (closest.left > playerDistRef._x)
+				else if (closest.left > playerDistRef._x) // Same thing as above for when right
 				{
 					if (goLeft == LEFT)
 					{
@@ -135,13 +146,14 @@ namespace KotodamaAiri
 					else
 						input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
-				else
+				else // The allie is right forward
 				{
 					input.ki.dwFlags = 0;
 					goLeft = UNDEFINED;
 					currCamSpeed = baseCamSpeed;
 				}
 				input.ki.wVk = 0x57; // W
+				// If we begin to move forward, we press W twice to run
 				if (input.ki.dwFlags == 0 && GetKeyState('W') >= 0)
 				{
 					SendInput(1, &input, sizeof(INPUT));
@@ -150,13 +162,15 @@ namespace KotodamaAiri
 					input.ki.dwFlags = 0;
 				}
 				SendInput(1, &input, sizeof(INPUT));
+
+				// Spam '3' to use Stella heal when it can
 				input.ki.wVk = 0x33; // 3
 				input.ki.dwFlags = 0;
 				SendInput(1, &input, sizeof(INPUT));
 				input.ki.dwFlags = KEYEVENTF_KEYUP;
 				SendInput(1, &input, sizeof(INPUT));
 			}
-			else
+			else // If we can't find an allie
 			{
 				goLeft = UNDEFINED;
 				currCamSpeed = baseCamSpeed;
@@ -170,9 +184,9 @@ namespace KotodamaAiri
 
 	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
 	{
-		std::vector<PixelBlock> players = FindObject(200, 110, 210, 15, min, max);
-		std::vector<PixelBlock> tmp = FindObject(65, 180, 190, 15, min, max);
-		std::vector<PixelBlock> tmp2 = FindObject(74, 215, 218, 15, min, max);
+		std::vector<PixelBlock> players = FindObject(200, 110, 210, 15, min, max); // Purple
+		std::vector<PixelBlock> tmp = FindObject(65, 180, 190, 15, min, max); // Blue
+		std::vector<PixelBlock> tmp2 = FindObject(74, 215, 218, 15, min, max); // Blue (lighter)
 		players.insert(players.end(), tmp.begin(), tmp.end());
 		players.insert(players.end(), tmp2.begin(), tmp2.end());
 		std::vector<RECT> allRects;
@@ -194,6 +208,8 @@ namespace KotodamaAiri
 			closest = { 0, 0, 0, 0 };
 			return (closest);
 		}
+
+		// In case we seam to find many player, we take the closest to the center
 		int minDist = -1;
 		Vector2 centerVec = Vector2(center.x, center.y);
 		for (const auto& player : players)
@@ -210,6 +226,7 @@ namespace KotodamaAiri
 		return (closest);
 	}
 
+	// We pack pixels of similar color together
 	std::vector<PixelBlock> Screen::FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept
 	{
 		UpdatePixels();
