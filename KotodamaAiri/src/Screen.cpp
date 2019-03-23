@@ -1,6 +1,7 @@
 #include <iostream>
 #include <climits>
 #include <string>
+#include <ctime>
 #include "../inc/Screen.hpp"
 #include "../inc/PixelBlock.hpp"
 #include "../inc/Utils.hpp"
@@ -79,6 +80,7 @@ namespace KotodamaAiri
 		const int baseCamSpeed = 100;
 		int currCamSpeed = baseCamSpeed;
 		Direction goLeft = UNDEFINED;
+		srand(static_cast<unsigned int>(time(nullptr)));
 		while (true)
 		{
 			std::cout << std::string(finalMsg.length(), '\b');
@@ -87,12 +89,14 @@ namespace KotodamaAiri
 			finalMsg += ", Allies found: " + std::to_string(allAllies.size());
 
 			// Get the closest allie
-			int minDist = -1;
-			RECT closest = GetClosest(allAllies, minDist, playerDistRef);
+			int minDist;
+			RECT closest;
 
-			finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
-			if (minDist > -1)
+			if (allAllies.size() > 0)
 			{
+				closest = GetClosest(allAllies, minDist, playerDistRef);
+
+				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				GetCursorPos(&p);
 				if (closest.top > playerDistRef._y) // If allie is behind us we flip the camera
 					SetCursorPos(p.x - 500, p.y);
@@ -160,17 +164,20 @@ namespace KotodamaAiri
 
 			std::vector<RECT> allEnnemies = FindEnnemies(minV, maxV);
 			finalMsg += ", Ennemies found: " + std::to_string(allEnnemies.size());
-			closest = GetClosest(allEnnemies, minDist, playerDistRef);
-			if (minDist != -1)
+			if (allEnnemies.size() > 0)
 			{
+				closest = GetClosest(allEnnemies, minDist, playerDistRef);
+				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				finalMsg += " (Distance: " + std::to_string(minDist) + ")";
-				if (minDist < 12500) // If enemies are too close we launch offensive competencies
+				if (minDist < 400) // If enemies are too close we launch offensive competencies
 				{
 					input.ki.dwFlags = 0;
-					input.ki.wVk = 0x31; // 1
+					if (rand() % 2 == 0)
+						input.ki.wVk = 0x31; // 1
+					else
+						input.ki.wVk = 0x32; // 2
 					SendInput(1, &input, sizeof(INPUT));
-					input.ki.dwFlags = 0;
-					input.ki.wVk = 0x32; // 2
+					input.ki.dwFlags = KEYEVENTF_KEYUP;
 					SendInput(1, &input, sizeof(INPUT));
 				}
 			}
@@ -183,6 +190,7 @@ namespace KotodamaAiri
 
 	RECT Screen::GetClosest(std::vector<RECT> _allRects, int& minDist, const Vector2& playerDistRef) const noexcept
 	{
+		minDist = -1;
 		RECT closest;
 		if (_allRects.size() == 1)
 		{
