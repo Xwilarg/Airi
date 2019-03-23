@@ -2,6 +2,8 @@
 #include <climits>
 #include <string>
 #include <ctime>
+#include <atlimage.h>
+#include <bitset>
 #include "../inc/Screen.hpp"
 #include "../inc/PixelBlock.hpp"
 #include "../inc/Utils.hpp"
@@ -12,14 +14,15 @@ namespace KotodamaAiri
 		: _desktopWindow(GetDesktopWindow()), _desktopDc(GetDC(_desktopWindow)), _captureDc(CreateCompatibleDC(_desktopDc)),
 		_width(GetDeviceCaps(_desktopDc, HORZRES)), _height(GetDeviceCaps(_desktopDc, VERTRES)),
 		_screenSize(_width * _height), _captureBitmap(CreateCompatibleBitmap(_desktopDc, _width, _height)),
-		_bmi(), _pixels(new RGBQUAD[_screenSize])
+		_bmi(), _pixels(new RGBQUAD[_screenSize]),
+		_nbColors(static_cast<WORD>(GetDeviceCaps(_desktopDc, BITSPIXEL))), _nbPlanes(static_cast<WORD>(GetDeviceCaps(_desktopDc, PLANES)))
 	{
 		SelectObject(_captureDc, _captureBitmap);
 		_bmi.bmiHeader.biSize = sizeof(_bmi.bmiHeader);
 		_bmi.bmiHeader.biWidth = _width;
 		_bmi.bmiHeader.biHeight = _height;
-		_bmi.bmiHeader.biPlanes = static_cast<WORD>(GetDeviceCaps(_desktopDc, PLANES));
-		_bmi.bmiHeader.biBitCount = static_cast<WORD>(GetDeviceCaps(_desktopDc, BITSPIXEL));
+		_bmi.bmiHeader.biPlanes = _nbPlanes;
+		_bmi.bmiHeader.biBitCount = _nbColors;
 		_bmi.bmiHeader.biCompression = BI_RGB;
 	}
 
@@ -56,11 +59,14 @@ namespace KotodamaAiri
 				goto retry;
 			FillRect(hDC_Desktop, &r, blueBrush);
 		}
+		RECT mapName{ r.left, r.top - 30, (r.right + r.left) / 2, r.top }; // Where the name of the map is written
 
 		// minV and maxV are the bounds of the mini map
 		// that allow us to limitate our search to a smaller part of the screen
 		Vector2 minV(r.left, r.top);
 		Vector2 maxV(r.right, r.bottom);
+		Vector2 minMap(mapName.left, mapName.top);
+		Vector2 maxMap(mapName.right, mapName.bottom);
 		std::cout << "Map located, you can press Q at any time to exit." << std::endl;
 		std::cout << "Locating player...";
 		RECT rect;
@@ -84,6 +90,9 @@ namespace KotodamaAiri
 		while (true)
 		{
 			std::cout << std::string(finalMsg.length(), '\b');
+
+			std::string tmp = GetText(minMap, maxMap);
+
 			finalMsg = "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")";
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
 			finalMsg += ", Allies found: " + std::to_string(allAllies.size());
@@ -274,7 +283,6 @@ namespace KotodamaAiri
 	// We pack pixels of similar color together
 	std::vector<PixelBlock> Screen::FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept
 	{
-		UpdatePixels();
 		std::vector<PixelBlock> pixels;
 		for (const auto& p : GetPixels(red - offset, red + offset, green - offset, green + offset, blue - offset, blue + offset, min, max))
 		{
@@ -294,8 +302,9 @@ namespace KotodamaAiri
 		return (pixels);
 	}
 
-	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2& min, const Vector2& max) const noexcept
+	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2& min, const Vector2& max) noexcept
 	{
+		UpdatePixels();
 		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
 		{
@@ -312,6 +321,44 @@ namespace KotodamaAiri
 			}
 		}
 		return (newPixels);
+	}
+
+	std::vector<PixelInfo> Screen::GetPixels(const Vector2& min, const Vector2& max) noexcept
+	{
+		UpdatePixels();
+		std::vector<PixelInfo> newPixels;
+		for (int i = 0; i < _screenSize; i++)
+		{
+			const RGBQUAD& quad = _pixels[i];
+			int x = i % _width;
+			int y = _height - i / _width;
+			if (x >= min._x && x <= max._x && y >= min._y && y <= max._y)
+				newPixels.emplace_back(x, y, quad);
+		}
+		return (newPixels);
+	}
+
+	std::string Screen::GetText(const Vector2 &min, const Vector2 &max) noexcept
+	{
+		std::vector<PixelInfo> textPixels = GetPixels(min, max);
+		int width = max._x - min._x;
+		int height = max._y - min._y;
+		size_t size = textPixels.size();
+		CImage image;
+		image.Create(width, height, _nbColors);
+		for (int i = 0; i < size; i++)
+		{
+			DWORD pixel = 0;
+			pixel = pixel << 8;
+			pixel |= textPixels[i]._color.rgbBlue;
+			pixel = pixel << 8;
+			pixel |= textPixels[i]._color.rgbGreen;
+			pixel = pixel << 8;
+			pixel |= textPixels[i]._color.rgbRed;
+			image.SetPixel(i % width, i / width, pixel);
+		}
+		image.Save("output.bmp");
+		return ("");
 	}
 
 	void Screen::UpdatePixels() noexcept

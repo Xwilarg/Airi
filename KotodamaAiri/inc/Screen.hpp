@@ -26,7 +26,9 @@ namespace KotodamaAiri
 		[[nodiscard]] std::vector<RECT> FindAllies(const Vector2& min, const Vector2& max) noexcept;
 		[[nodiscard]] std::vector<RECT> FindEnnemies(const Vector2& min, const Vector2& max) noexcept;
 		[[nodiscard]] std::vector<PixelBlock> FindObject(int red, int green, int blue, int offset, const Vector2& min, const Vector2& max) noexcept;
-		std::vector<PixelInfo> GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2 &min, const Vector2 &max) const noexcept;
+		[[nodiscard]] std::vector<PixelInfo> GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2 &min, const Vector2 &max) noexcept;
+		[[nodiscard]] std::vector<PixelInfo> GetPixels(const Vector2 &min, const Vector2 &max) noexcept;
+		[[nodiscard]] std::string GetText(const Vector2 &min, const Vector2 &max) noexcept;
 		void UpdatePixels() noexcept;
 		HWND _desktopWindow;
 		HDC _desktopDc, _captureDc;
@@ -35,6 +37,8 @@ namespace KotodamaAiri
 		HBITMAP _captureBitmap;
 		BITMAPINFO _bmi;
 		RGBQUAD *_pixels;
+		WORD _nbColors;
+		WORD _nbPlanes;
 	};
 }
 
