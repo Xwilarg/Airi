@@ -1,3 +1,5 @@
+#using <WindowsPreview.Media.Ocr.dll>
+
 #include <iostream>
 #include <climits>
 #include <string>
@@ -357,6 +359,7 @@ namespace KotodamaAiri
 			pixel |= textPixels[i]._color.rgbRed;
 			image.SetPixel(i % width, height - i / width, pixel);
 		}
+		//OcrEngine^ ocrEngine = nullptr;
 		image.Save("output.bmp");
 		return ("");
 	}
