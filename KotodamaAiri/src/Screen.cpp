@@ -59,7 +59,7 @@ namespace KotodamaAiri
 				goto retry;
 			FillRect(hDC_Desktop, &r, blueBrush);
 		}
-		RECT mapName{ r.left, r.top - 30, (r.right + r.left) / 2, r.top }; // Where the name of the map is written
+		RECT mapName{ r.left, r.top - 30, (r.right + r.left) / 2, r.top + 25 }; // Where the name of the map is written
 
 		// minV and maxV are the bounds of the mini map
 		// that allow us to limitate our search to a smaller part of the screen
@@ -341,7 +341,7 @@ namespace KotodamaAiri
 	std::string Screen::GetText(const Vector2 &min, const Vector2 &max) noexcept
 	{
 		std::vector<PixelInfo> textPixels = GetPixels(min, max);
-		int width = max._x - min._x;
+		int width = max._x - min._x + 1;
 		int height = max._y - min._y;
 		size_t size = textPixels.size();
 		CImage image;
@@ -355,7 +355,7 @@ namespace KotodamaAiri
 			pixel |= textPixels[i]._color.rgbGreen;
 			pixel = pixel << 8;
 			pixel |= textPixels[i]._color.rgbRed;
-			image.SetPixel(i % width, i / width, pixel);
+			image.SetPixel(i % width, height - i / width, pixel);
 		}
 		image.Save("output.bmp");
 		return ("");
