@@ -3,7 +3,6 @@
 #include <string>
 #include <ctime>
 #include <atlimage.h>
-#include <bitset>
 #include "../inc/Screen.hpp"
 #include "../inc/PixelBlock.hpp"
 #include "../inc/Utils.hpp"
@@ -47,6 +46,7 @@ namespace KotodamaAiri
 			if (GetKeyState(VK_LBUTTON) < 0)
 				break;
 		}
+		UpdatePixels();
 		POINT p;
 		GetCursorPos(&p);
 		RECT r { p.x - 125, p.y - 125, p.x + 125, p.y + 125 }; // The mini map is around 500*500px
@@ -76,6 +76,8 @@ namespace KotodamaAiri
 			rect = FindPlayer(minV, maxV, p);
 		} while (rect.left == 0);
 		std::cout << " OK" << std::endl;
+		RightClick();
+		std::string oldMap = GetText(minMap, maxMap);
 		std::string finalMsg = "";
 		Vector2 playerDistRef = Vector2(rect.left, rect.top);
 		INPUT input;
@@ -89,9 +91,8 @@ namespace KotodamaAiri
 		srand(static_cast<unsigned int>(time(nullptr)));
 		while (true)
 		{
+			UpdatePixels();
 			std::cout << std::string(finalMsg.length(), '\b');
-
-			std::string tmp = GetText(minMap, maxMap);
 
 			finalMsg = "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")";
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
@@ -178,7 +179,7 @@ namespace KotodamaAiri
 				closest = GetClosest(allEnnemies, minDist, playerDistRef);
 				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				finalMsg += " (Distance: " + std::to_string(minDist) + ")";
-				if (minDist < 400) // If enemies are too close we launch offensive competencies
+				if (minDist < 300) // If enemies are too close we launch offensive competencies
 				{
 					input.ki.dwFlags = 0;
 					if (rand() % 2 == 0)
@@ -190,11 +191,34 @@ namespace KotodamaAiri
 					SendInput(1, &input, sizeof(INPUT));
 				}
 			}
+			std::string currMap = GetText(minMap, maxMap);
+			if (oldMap != currMap)
+			{
+				RightClick();
+				currMap = oldMap;
+			}
 			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
 				break;
 		}
 		DeleteObject(blueBrush);
+	}
+
+	void Screen::RightClick() const noexcept
+	{
+		INPUT rightClick;
+		rightClick.mi.mouseData = 0;
+		rightClick.mi.time = 0;
+		rightClick.mi.dwExtraInfo = 0;
+		POINT p;
+		GetCursorPos(&p);
+		rightClick.mi.dx = p.x;
+		rightClick.mi.dy = p.y;
+		rightClick.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTDOWN);
+		SendInput(1, &rightClick, sizeof(INPUT));
+		Sleep(10);
+		rightClick.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTUP);
+		SendInput(1, &rightClick, sizeof(INPUT));
 	}
 
 	RECT Screen::GetClosest(std::vector<RECT> _allRects, int& minDist, const Vector2& playerDistRef) const noexcept
@@ -304,7 +328,6 @@ namespace KotodamaAiri
 
 	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2& min, const Vector2& max) noexcept
 	{
-		UpdatePixels();
 		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
 		{
@@ -325,7 +348,6 @@ namespace KotodamaAiri
 
 	std::vector<PixelInfo> Screen::GetPixels(const Vector2& min, const Vector2& max) noexcept
 	{
-		UpdatePixels();
 		std::vector<PixelInfo> newPixels;
 		for (int i = 0; i < _screenSize; i++)
 		{
@@ -338,27 +360,38 @@ namespace KotodamaAiri
 		return (newPixels);
 	}
 
+	// Name of the name, allow to compare names
+	// Doesn't actually return a real name, but a bunch of char that allow to compare them
 	std::string Screen::GetText(const Vector2 &min, const Vector2 &max) noexcept
 	{
 		std::vector<PixelInfo> textPixels = GetPixels(min, max);
-		int width = max._x - min._x + 1;
-		int height = max._y - min._y;
-		size_t size = textPixels.size();
-		CImage image;
-		image.Create(width, height, _nbColors);
-		for (int i = 0; i < size; i++)
+		std::string imageId = "";
+		for (int i = 0; i < textPixels.size(); i++)
 		{
-			DWORD pixel = 0;
+			auto currPixel = textPixels[i];
+			unsigned int pixel = 0;
+			if (IsClose(currPixel._color.rgbBlue, 228, 5))
+				pixel |= currPixel._color.rgbBlue;
+			else
+				pixel |= 0;
 			pixel = pixel << 8;
-			pixel |= textPixels[i]._color.rgbBlue;
+			if (IsClose(currPixel._color.rgbGreen, 227, 5))
+				pixel |= currPixel._color.rgbGreen;
+			else
+				pixel |= 0;
 			pixel = pixel << 8;
-			pixel |= textPixels[i]._color.rgbGreen;
-			pixel = pixel << 8;
-			pixel |= textPixels[i]._color.rgbRed;
-			image.SetPixel(i % width, height - i / width, pixel);
+			if (IsClose(currPixel._color.rgbRed, 225, 5))
+				pixel |= currPixel._color.rgbRed;
+			else
+				pixel |= 0;
+			imageId += pixel;
 		}
-		image.Save("output.bmp");
-		return ("");
+		return (imageId);
+	}
+
+	bool Screen::IsClose(int value, int refValue, int margin) const noexcept
+	{
+		return (value >= refValue - margin && value <= value + margin);
 	}
 
 	void Screen::UpdatePixels() noexcept
