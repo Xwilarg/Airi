@@ -3,11 +3,11 @@
 #include <string>
 #include <ctime>
 #include <atlimage.h>
-#include "../inc/Screen.hpp"
-#include "../inc/PixelBlock.hpp"
-#include "../inc/Utils.hpp"
+#include "Screen.hpp"
+#include "PixelBlock.hpp"
+#include "Utils.hpp"
 
-namespace KotodamaAiri
+namespace Airi
 {
 	Screen::Screen() noexcept
 		: _desktopWindow(GetDesktopWindow()), _desktopDc(GetDC(_desktopWindow)), _captureDc(CreateCompatibleDC(_desktopDc)),
@@ -108,9 +108,9 @@ namespace KotodamaAiri
 
 				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				GetCursorPos(&p);
-				if (closest.top > playerDistRef._y) // If allie is behind us we flip the camera
+				if (closest.top > playerDistRef.Y) // If allie is behind us we flip the camera
 					SetCursorPos(p.x - 500, p.y);
-				else if (closest.left < playerDistRef._x)
+				else if (closest.left < playerDistRef.X)
 				{
 					// If the camera is going too fast to locate an allie, we divide it speed by two
 					if (goLeft == RIGHT)
@@ -127,7 +127,7 @@ namespace KotodamaAiri
 					else
 						input.ki.dwFlags = KEYEVENTF_KEYUP;
 				}
-				else if (closest.left > playerDistRef._x) // Same thing as above for when right
+				else if (closest.left > playerDistRef.X) // Same thing as above for when right
 				{
 					if (goLeft == LEFT)
 					{
@@ -257,7 +257,7 @@ namespace KotodamaAiri
 		{
 			const Vector2& pos = player.GetUpperLeft();
 			const Vector2& size = player.GetSize();
-			allRects.push_back({ pos._x, pos._y, pos._x + size._x, pos._y + size._y });
+			allRects.push_back({ pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y });
 		}
 		return (allRects);
 	}
@@ -272,7 +272,7 @@ namespace KotodamaAiri
 		{
 			const Vector2& pos = ennemy.GetUpperLeft();
 			const Vector2& size = ennemy.GetSize();
-			allRects.push_back({ pos._x, pos._y, pos._x + size._x, pos._y + size._y });
+			allRects.push_back({ pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y });
 		}
 		return (allRects);
 	}
@@ -297,7 +297,7 @@ namespace KotodamaAiri
 			if (minDist == -1 || dist < minDist)
 			{
 				const Vector2& size = player.GetSize();
-				closest = { pos._x, pos._y, pos._x + size._x, pos._y + size._y };
+				closest = { pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y };
 				minDist = dist;
 			}
 		}
@@ -311,7 +311,7 @@ namespace KotodamaAiri
 		for (const auto& p : GetPixels(red - offset, red + offset, green - offset, green + offset, blue - offset, blue + offset, min, max))
 		{
 			bool pxFound = false;
-			Vector2 pos = Vector2(p._x, p._y);
+			Vector2 pos = Vector2(p.X, p.Y);
 			for (PixelBlock& px : pixels)
 			{
 				if (px.AddPixel(pos))
@@ -339,7 +339,7 @@ namespace KotodamaAiri
 			{
 				int x = i % _width;
 				int y = _height - i / _width;
-				if (x >= min._x && x <= max._x && y >= min._y && y <= max._y)
+				if (x >= min.X && x <= max.X && y >= min.Y && y <= max.Y)
 					newPixels.emplace_back(x, y, quad);
 			}
 		}
@@ -354,7 +354,7 @@ namespace KotodamaAiri
 			const RGBQUAD& quad = _pixels[i];
 			int x = i % _width;
 			int y = _height - i / _width;
-			if (x >= min._x && x <= max._x && y >= min._y && y <= max._y)
+			if (x >= min.X && x <= max.X && y >= min.Y && y <= max.Y)
 				newPixels.emplace_back(x, y, quad);
 		}
 		return (newPixels);
@@ -370,18 +370,18 @@ namespace KotodamaAiri
 		{
 			auto currPixel = textPixels[i];
 			unsigned int pixel = 0;
-			if (IsClose(currPixel._color.rgbBlue, 228, 5))
-				pixel |= currPixel._color.rgbBlue;
+			if (IsClose(currPixel.Color.rgbBlue, 228, 5))
+				pixel |= currPixel.Color.rgbBlue;
 			else
 				pixel |= 0;
 			pixel = pixel << 8;
-			if (IsClose(currPixel._color.rgbGreen, 227, 5))
-				pixel |= currPixel._color.rgbGreen;
+			if (IsClose(currPixel.Color.rgbGreen, 227, 5))
+				pixel |= currPixel.Color.rgbGreen;
 			else
 				pixel |= 0;
 			pixel = pixel << 8;
-			if (IsClose(currPixel._color.rgbRed, 225, 5))
-				pixel |= currPixel._color.rgbRed;
+			if (IsClose(currPixel.Color.rgbRed, 225, 5))
+				pixel |= currPixel.Color.rgbRed;
 			else
 				pixel |= 0;
 			imageId += pixel;

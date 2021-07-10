@@ -1,10 +1,9 @@
-#ifndef PIXELBLOCK_HPP_
-# define PIXELBLOCK_HPP_
+#pragma once
 
 # include <Windows.h>
 # include "Vector2.hpp"
 
-namespace KotodamaAiri
+namespace Airi
 {
 	class PixelBlock
 	{
@@ -26,5 +25,3 @@ namespace KotodamaAiri
 		static int id;
 	};
 }
-
-#endif // !PIXELBLOCK_HPP_

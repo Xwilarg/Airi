@@ -1,9 +1,9 @@
 #include <iostream>
-#include "../inc/Screen.hpp"
+#include "Screen.hpp"
 
 int main()
 {
-	KotodamaAiri::Screen screen;
+	Airi::Screen screen;
 	screen.CheckPixels();
 	std::cout << "Enter anything to continue..." << std::endl;
 	getchar();

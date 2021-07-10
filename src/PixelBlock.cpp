@@ -1,7 +1,7 @@
-#include "../inc/PixelBlock.hpp"
-#include "../inc/Utils.hpp"
+#include "PixelBlock.hpp"
+#include "Utils.hpp"
 
-namespace KotodamaAiri
+namespace Airi
 {
 	PixelBlock::PixelBlock(const Vector2 &pos) noexcept
 		: _lowerRight(pos), _upperLeft(pos), _id(id++)
@@ -21,40 +21,40 @@ namespace KotodamaAiri
 	{
 		if (!IsClose(pos, 100))
 			return (false);
-		if (pos._x < _upperLeft._x)
-			_upperLeft._x = pos._x;
-		else if (pos._x > _lowerRight._x)
-			_lowerRight._x = pos._x;
-		if (pos._y < _upperLeft._y)
-			_upperLeft._y = pos._y;
-		else if (pos._y > _lowerRight._y)
-			_lowerRight._y = pos._y;
+		if (pos.X < _upperLeft.X)
+			_upperLeft.X = pos.X;
+		else if (pos.X > _lowerRight.X)
+			_lowerRight.X = pos.X;
+		if (pos.Y < _upperLeft.Y)
+			_upperLeft.Y = pos.Y;
+		else if (pos.Y > _lowerRight.Y)
+			_lowerRight.Y = pos.Y;
 		return (true);
+	}
+
+	bool PixelBlock::IsCloseX(const PixelBlock& pb) const noexcept
+	{
+		return (_upperLeft.X == pb._upperLeft.X);
 	}
 
 	RECT PixelBlock::GetRect() const noexcept
 	{
-		RECT r { _upperLeft._x, _upperLeft._y, _lowerRight._x, _lowerRight._y };
+		RECT r { _upperLeft.X, _upperLeft.Y, _lowerRight.X, _lowerRight.Y };
 		return (r);
 	}
 
 	Vector2 PixelBlock::GetSize() const noexcept
 	{
-		return (Vector2(_lowerRight._x - _upperLeft._x, _lowerRight._y - _upperLeft._y));
+		return (Vector2(_lowerRight.X - _upperLeft.X, _lowerRight.Y - _upperLeft.Y));
 	}
 
 	bool PixelBlock::IsSquared(int margin) const noexcept
 	{
 		Vector2 size = GetSize();
-		int sizeInt = size._x - size._y;
+		int sizeInt = size.X - size.Y;
 		if (sizeInt < 0)
 			sizeInt = -sizeInt;
 		return (sizeInt < margin);
-	}
-
-	bool PixelBlock::IsCloseX(const PixelBlock& pb) const noexcept
-	{
-		return (_upperLeft._x == pb._upperLeft._x);
 	}
 
 	const Vector2& PixelBlock::GetUpperLeft() const noexcept

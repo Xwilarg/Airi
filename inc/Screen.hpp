@@ -1,11 +1,10 @@
-#ifndef SCREEN_HPP_
-# define SCREEN_HPP_
+#pragma once
 
 # include <vector>
 # include "PixelInfo.hpp"
 # include "PixelBlock.hpp"
 
-namespace KotodamaAiri
+namespace Airi
 {
 	class Screen
 	{
@@ -43,5 +42,3 @@ namespace KotodamaAiri
 		WORD _nbPlanes;
 	};
 }
-
-#endif // !SCREEN_HPP_

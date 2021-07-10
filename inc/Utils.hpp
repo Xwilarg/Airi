@@ -1,11 +1,10 @@
-#ifndef UTILS_HPP_
-# define UTILS_HPP_
+#pragma once
 
 # include <vector>
 # include "PixelInfo.hpp"
 # include "PixelBlock.hpp"
 
-namespace KotodamaAiri
+namespace Airi
 {
 	class Utils
 	{
@@ -14,5 +13,3 @@ namespace KotodamaAiri
 		[[nodiscard]] static int PowTwo(int x) noexcept;
 	};
 }
-
-#endif // !UTILS_HPP_
