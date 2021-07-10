@@ -14,7 +14,7 @@ namespace Airi
 		void CheckPixels() noexcept;
 
 	private:
-		enum Direction
+		enum class Direction
 		{
 			LEFT,
 			RIGHT,

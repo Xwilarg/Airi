@@ -67,7 +67,7 @@ namespace Airi
 		Vector2 maxV(r.right, r.bottom);
 		Vector2 minMap(mapName.left, mapName.top);
 		Vector2 maxMap(mapName.right, mapName.bottom);
-		std::cout << "Map located, you can press Q at any time to exit." << std::endl;
+		std::cout << "Map located, you can press Q at any time to pause." << std::endl;
 		std::cout << "Locating player...";
 		RECT rect;
 		do
@@ -78,7 +78,6 @@ namespace Airi
 		std::cout << " OK" << std::endl;
 		RightClick();
 		std::string oldMap = GetText(minMap, maxMap);
-		std::string finalMsg = "";
 		Vector2 playerDistRef = Vector2(rect.left, rect.top);
 		INPUT input;
 		input.type = INPUT_KEYBOARD;
@@ -87,16 +86,20 @@ namespace Airi
 		input.ki.dwExtraInfo = 0;
 		const int baseCamSpeed = 100;
 		int currCamSpeed = baseCamSpeed;
-		Direction goLeft = UNDEFINED;
+		Direction goLeft = Direction::UNDEFINED;
 		srand(static_cast<unsigned int>(time(nullptr)));
+
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
+		GetConsoleScreenBufferInfo(hConsole, &bufferInfo);
+
 		while (true)
 		{
+			SetConsoleCursorPosition(hConsole, bufferInfo.dwCursorPosition);
 			UpdatePixels();
-			std::cout << std::string(finalMsg.length(), '\b');
-
-			finalMsg = "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")";
+			std::cout << "Player position: (" + std::to_string((rect.right + rect.left) / 2) + " ; " + std::to_string((rect.top + rect.bottom) / 2) + ")\n";
 			std::vector<RECT> allAllies = FindAllies(minV, maxV);
-			finalMsg += ", Allies found: " + std::to_string(allAllies.size());
+			std::cout << "Allies found: " + std::to_string(allAllies.size());
 
 			// Get the closest allie
 			int minDist;
@@ -106,20 +109,20 @@ namespace Airi
 			{
 				closest = GetClosest(allAllies, minDist, playerDistRef);
 
-				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
+				std::cout << " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
 				GetCursorPos(&p);
 				if (closest.top > playerDistRef.Y) // If allie is behind us we flip the camera
 					SetCursorPos(p.x - 500, p.y);
 				else if (closest.left < playerDistRef.X)
 				{
 					// If the camera is going too fast to locate an allie, we divide it speed by two
-					if (goLeft == RIGHT)
+					if (goLeft == Direction::RIGHT)
 					{
 						currCamSpeed /= 2;
 						if (currCamSpeed == 0)
 							currCamSpeed = 1;
 					}
-					goLeft = LEFT;
+					goLeft = Direction::LEFT;
 					SetCursorPos(p.x - currCamSpeed, p.y);
 					// If the bot is "more or less" looking to an allie, we go forward
 					if (currCamSpeed <= 25)
@@ -129,13 +132,13 @@ namespace Airi
 				}
 				else if (closest.left > playerDistRef.X) // Same thing as above for when right
 				{
-					if (goLeft == LEFT)
+					if (goLeft == Direction::LEFT)
 					{
 						currCamSpeed /= 2;
 						if (currCamSpeed == 0)
 							currCamSpeed = 1;
 					}
-					goLeft = RIGHT;
+					goLeft = Direction::RIGHT;
 					SetCursorPos(p.x + currCamSpeed, p.y);
 					if (currCamSpeed <= 25)
 						input.ki.dwFlags = 0;
@@ -145,7 +148,7 @@ namespace Airi
 				else // The allie is right forward
 				{
 					input.ki.dwFlags = 0;
-					goLeft = UNDEFINED;
+					goLeft = Direction::UNDEFINED;
 					currCamSpeed = baseCamSpeed;
 				}
 				input.ki.wVk = 0x57; // W
@@ -168,17 +171,17 @@ namespace Airi
 			}
 			else // If we can't find an allie
 			{
-				goLeft = UNDEFINED;
+				goLeft = Direction::UNDEFINED;
 				currCamSpeed = baseCamSpeed;
 			}
 
 			std::vector<RECT> allEnnemies = FindEnnemies(minV, maxV);
-			finalMsg += ", Ennemies found: " + std::to_string(allEnnemies.size());
+			std::cout << "\nEnnemies found: " + std::to_string(allEnnemies.size());
 			if (allEnnemies.size() > 0)
 			{
 				closest = GetClosest(allEnnemies, minDist, playerDistRef);
-				finalMsg += " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
-				finalMsg += " (Distance: " + std::to_string(minDist) + ")";
+				std::cout << " (" + std::to_string((closest.right + closest.left) / 2) + " ; " + std::to_string((closest.top + closest.bottom) / 2) + ")";
+				std::cout << " (Distance: " + std::to_string(minDist) + ")";
 				if (minDist < 300) // If enemies are too close we launch offensive competencies
 				{
 					input.ki.dwFlags = 0;
@@ -197,9 +200,14 @@ namespace Airi
 				RightClick();
 				currMap = oldMap;
 			}
-			std::cout << finalMsg;
 			if (GetKeyState('Q') & 0x8000)
-				break;
+			{
+				while (true)
+				{
+					if (GetKeyState('Q') & 0x8000)
+						break;
+				}
+			}
 		}
 		DeleteObject(blueBrush);
 	}
@@ -242,7 +250,7 @@ namespace Airi
 				}
 			}
 		}
-		return (closest);
+		return closest;
 	}
 
 	std::vector<RECT> Screen::FindAllies(const Vector2& min, const Vector2& max) noexcept
@@ -259,7 +267,7 @@ namespace Airi
 			const Vector2& size = player.GetSize();
 			allRects.push_back({ pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y });
 		}
-		return (allRects);
+		return allRects;
 	}
 
 	std::vector<RECT> Screen::FindEnnemies(const Vector2& min, const Vector2& max) noexcept
@@ -274,7 +282,7 @@ namespace Airi
 			const Vector2& size = ennemy.GetSize();
 			allRects.push_back({ pos.X, pos.Y, pos.X + size.X, pos.Y + size.Y });
 		}
-		return (allRects);
+		return allRects;
 	}
 
 	RECT Screen::FindPlayer(const Vector2& min, const Vector2& max, const POINT& center) noexcept
@@ -301,7 +309,7 @@ namespace Airi
 				minDist = dist;
 			}
 		}
-		return (closest);
+		return closest;
 	}
 
 	// We pack pixels of similar color together
@@ -323,7 +331,7 @@ namespace Airi
 			if (!pxFound)
 				pixels.emplace_back(pos);
 		}
-		return (pixels);
+		return pixels;
 	}
 
 	std::vector<PixelInfo> Screen::GetPixels(int redMin, int redMax, int greenMin, int greenMax, int blueMin, int blueMax, const Vector2& min, const Vector2& max) noexcept
@@ -343,7 +351,7 @@ namespace Airi
 					newPixels.emplace_back(x, y, quad);
 			}
 		}
-		return (newPixels);
+		return newPixels;
 	}
 
 	std::vector<PixelInfo> Screen::GetPixels(const Vector2& min, const Vector2& max) noexcept
@@ -357,7 +365,7 @@ namespace Airi
 			if (x >= min.X && x <= max.X && y >= min.Y && y <= max.Y)
 				newPixels.emplace_back(x, y, quad);
 		}
-		return (newPixels);
+		return newPixels;
 	}
 
 	// Name of the name, allow to compare names
@@ -386,12 +394,12 @@ namespace Airi
 				pixel |= 0;
 			imageId += pixel;
 		}
-		return (imageId);
+		return imageId;
 	}
 
 	bool Screen::IsClose(int value, int refValue, int margin) const noexcept
 	{
-		return (value >= refValue - margin && value <= value + margin);
+		return value >= refValue - margin && value <= value + margin;
 	}
 
 	void Screen::UpdatePixels() noexcept
