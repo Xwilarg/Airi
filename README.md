@@ -1,6 +1,6 @@
 # Airi
 Airi is a Stella bot for Soul Worker\
-Airi works entirely by looking at the minimap of the game
+Airi works entirely by looking at the minimap of the game, **that also means it needs its own computer to run**
 
 The bot is able to follow the player in a level and throw attack spells\
 If the bot stop moving that probably mean it can't find you, if it happens just try to come closer to it. Same if it stay stuck in walls
